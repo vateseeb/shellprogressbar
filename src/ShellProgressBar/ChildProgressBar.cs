@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Concurrent;
-using System.Threading;
 
 namespace ShellProgressBar
 {
@@ -9,7 +7,8 @@ namespace ShellProgressBar
 		private readonly Action _scheduleDraw;
 		private readonly Action<ProgressBarHeight> _growth;
 
-		public DateTime StartDate { get; }  = DateTime.Now;
+		public DateTime StartDate { get; } = DateTime.Now;
+		public event EventHandler Done;
 
 		protected override void DisplayProgress() => _scheduleDraw?.Invoke();
 
@@ -27,7 +26,7 @@ namespace ShellProgressBar
 		protected override void OnDone()
 		{
 			if (_calledDone) return;
-			lock(_callOnce)
+			lock (_callOnce)
 			{
 				if (_calledDone) return;
 
@@ -38,6 +37,7 @@ namespace ShellProgressBar
 					_growth?.Invoke(ProgressBarHeight.Decrement);
 
 				_calledDone = true;
+				Done?.Invoke(this, null);
 			}
 		}
 

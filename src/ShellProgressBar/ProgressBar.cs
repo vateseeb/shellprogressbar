@@ -21,8 +21,14 @@ namespace ShellProgressBar
 
 		private int _visisbleDescendants = 0;
 
+		public Action ProgressStoppedAction
+		{
+			set => _progressStoppedAction = value;
+		}
+
+
 		public ProgressBar(int maxTicks, string message, ConsoleColor color)
-			: this(maxTicks, message, new ProgressBarOptions {ForegroundColor = color})
+			: this(maxTicks, message, new ProgressBarOptions { ForegroundColor = color })
 		{
 		}
 
@@ -128,7 +134,7 @@ namespace ShellProgressBar
 			else
 				DrawTopHalfPrefix(indentation, depth);
 
-			var newWidth = (int) ((width * percentage) / 100d);
+			var newWidth = (int)((width * percentage) / 100d);
 			var progBar = new string(progressCharacter, newWidth);
 			Console.Write(progBar);
 			if (backgroundColor.HasValue)
@@ -161,7 +167,7 @@ namespace ShellProgressBar
 			if (_isDisposed) return;
 
 			Console.CursorVisible = false;
-			var indentation = new[] {new Indentation(this.ForeGroundColor, true)};
+			var indentation = new[] { new Indentation(this.ForeGroundColor, true) };
 			var mainPercentage = this.Percentage;
 
 			lock (Lock)
@@ -227,7 +233,7 @@ namespace ShellProgressBar
 
 		private static void DrawChildren(IEnumerable<ChildProgressBar> children, Indentation[] indentation)
 		{
-			var view = children.Where(c => !c.Collapse).Select((c, i) => new {c, i}).ToList();
+			var view = children.Where(c => !c.Collapse).Select((c, i) => new { c, i }).ToList();
 			if (!view.Any()) return;
 
 			var lastChild = view.Max(t => t.i);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -12,16 +13,22 @@ namespace ShellProgressBar
 			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 		}
 
+		private static readonly object CheckLock = new object();
+		private static readonly object TimerLock = new object();
 		protected readonly DateTime _startDate = DateTime.Now;
 		private int _maxTicks;
 		private int _currentTick;
 		private string _message;
+		private Timer _idleTimer;
+		private bool _progressStopped;
+		protected Action _progressStoppedAction;
 
 		protected ProgressBarBase(int maxTicks, string message, ProgressBarOptions options)
 		{
 			this._maxTicks = Math.Max(0, maxTicks);
 			this._message = message;
 			this.Options = options ?? ProgressBarOptions.Default;
+			this._idleTimer = new Timer(CheckProgress, null, (int)Options.IdleTimeout.TotalMilliseconds, (int)Options.IdleTimeout.TotalMilliseconds);
 		}
 
 		internal ProgressBarOptions Options { get; }
@@ -79,8 +86,19 @@ namespace ShellProgressBar
 
 		public ChildProgressBar Spawn(int maxTicks, string message, ProgressBarOptions options = null)
 		{
-			var pbar = new ChildProgressBar(maxTicks, message, DisplayProgress, options, this.Grow);
-			this.Children.Add(pbar);
+			var pbar = new ChildProgressBar(maxTicks, message, DisplayProgress, options ?? Options, this.Grow)
+			{
+				_progressStoppedAction = this._progressStoppedAction
+			};
+
+			lock (TimerLock)
+			{
+				this._idleTimer?.Dispose();
+				this._idleTimer = null;
+				pbar.Done += ChildDone;
+				this.Children.Add(pbar);
+			}
+
 			DisplayProgress();
 			return pbar;
 		}
@@ -97,8 +115,34 @@ namespace ShellProgressBar
 			FinishTick(message);
 		}
 
+		internal void CheckProgress(object state)
+		{
+			lock (CheckLock)
+			{
+				if (this._progressStopped)
+					return;
+
+				this._progressStopped = true;
+				this._progressStoppedAction?.Invoke();
+			}
+		}
+
+		private void ChildDone(object sender, EventArgs e)
+		{
+			var child = (ChildProgressBar)sender;
+			child.Done -= ChildDone;
+
+			lock (TimerLock)
+			{
+				if (_currentTick < MaxTicks && Children.All(c => c.CurrentTick >= c.MaxTicks))
+					this._idleTimer = new Timer(CheckProgress, null, (int)Options.IdleTimeout.TotalMilliseconds, (int)Options.IdleTimeout.TotalMilliseconds);
+			}
+		}
+
 		private void FinishTick(string message)
 		{
+			this._progressStopped = false;
+			this._idleTimer?.Change((int)Options.IdleTimeout.TotalMilliseconds, (int)Options.IdleTimeout.TotalMilliseconds);
 			Interlocked.Increment(ref _currentTick);
 			if (message != null)
 				Interlocked.Exchange(ref _message, message);
@@ -106,6 +150,8 @@ namespace ShellProgressBar
 			if (_currentTick >= _maxTicks)
 			{
 				this.EndTime = DateTime.Now;
+				this._idleTimer?.Dispose();
+				this._idleTimer = null;
 				this.OnDone();
 			}
 			DisplayProgress();

@@ -52,10 +52,5 @@ namespace ShellProgressBar
 		/// This feature is available on the Windows platform.
 		/// </remarks>
 		public bool EnableTaskBarProgress { get; set; }
-
-		/// <summary>
-		/// Timeout used to notify when progress has stopped
-		/// </summary>
-		public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(8);
 	}
 }

@@ -21,11 +21,6 @@ namespace ShellProgressBar
 
 		private int _visisbleDescendants = 0;
 
-		public Action<double> ProgressStoppedAction
-		{
-			set => _progressStoppedAction = value;
-		}
-
 
 		public ProgressBar(int maxTicks, string message, ConsoleColor color)
 			: this(maxTicks, message, new ProgressBarOptions { ForegroundColor = color })
@@ -52,6 +47,11 @@ namespace ShellProgressBar
 					_timer.Dispose();
 					DisplayProgress();
 				}, null, 0, 1000);
+		}
+
+		public void StartMonitoring(Action<double, string> timeoutCallback, TimeSpan timeout)
+		{
+			IdleMonitor.Start(timeoutCallback, timeout);
 		}
 
 		protected override void Grow(ProgressBarHeight direction)
@@ -294,6 +294,8 @@ namespace ShellProgressBar
 
 		public void Dispose()
 		{
+			IdleMonitor.Stop();
+
 			if (this.EndTime == null) this.EndTime = DateTime.Now;
 			var openDescendantsPadding = (_visisbleDescendants * 2);
 

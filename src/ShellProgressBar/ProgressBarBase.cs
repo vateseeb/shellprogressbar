@@ -21,7 +21,7 @@ namespace ShellProgressBar
 		private string _message;
 		private Timer _idleTimer;
 		private bool _progressStopped;
-		protected Action _progressStoppedAction;
+		protected Action<double> _progressStoppedAction;
 
 		protected ProgressBarBase(int maxTicks, string message, ProgressBarOptions options)
 		{
@@ -123,7 +123,7 @@ namespace ShellProgressBar
 					return;
 
 				this._progressStopped = true;
-				this._progressStoppedAction?.Invoke();
+				this._progressStoppedAction?.Invoke(Percentage);
 			}
 		}
 
@@ -142,17 +142,20 @@ namespace ShellProgressBar
 		private void FinishTick(string message)
 		{
 			this._progressStopped = false;
-			this._idleTimer?.Change((int)Options.IdleTimeout.TotalMilliseconds, (int)Options.IdleTimeout.TotalMilliseconds);
 			Interlocked.Increment(ref _currentTick);
 			if (message != null)
 				Interlocked.Exchange(ref _message, message);
 
-			if (_currentTick >= _maxTicks)
+			lock (TimerLock)
 			{
-				this.EndTime = DateTime.Now;
-				this._idleTimer?.Dispose();
-				this._idleTimer = null;
-				this.OnDone();
+				this._idleTimer?.Change((int)Options.IdleTimeout.TotalMilliseconds, (int)Options.IdleTimeout.TotalMilliseconds);
+				if (_currentTick >= _maxTicks)
+				{
+					this.EndTime = DateTime.Now;
+					this._idleTimer?.Dispose();
+					this._idleTimer = null;
+					this.OnDone();
+				}
 			}
 			DisplayProgress();
 		}

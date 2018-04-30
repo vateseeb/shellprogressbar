@@ -21,7 +21,7 @@ namespace ShellProgressBar
 
 		private int _visisbleDescendants = 0;
 
-		public Action ProgressStoppedAction
+		public Action<double> ProgressStoppedAction
 		{
 			set => _progressStoppedAction = value;
 		}

@@ -87,7 +87,8 @@ namespace ShellProgressBar
 			var depth = indentation.Length;
 			var maxCharacterWidth = Console.WindowWidth - (depth * 2) + 2;
 			var duration = ((endDate ?? DateTime.Now) - startDate);
-			var durationString = $"{duration.Hours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+			var remaining = percentage >= 1 ? $"{100 * duration.TotalMinutes / percentage:F0} mins remaining" : "- remaining";
+			var durationString = $"{remaining} | {(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
 
 			var column1Width = Console.WindowWidth - durationString.Length - (depth * 2) + 2;
 			var column2Width = durationString.Length;

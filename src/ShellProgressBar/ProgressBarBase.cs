@@ -89,6 +89,8 @@ namespace ShellProgressBar
 
 		public void Tick(string message = null)
 		{
+			Interlocked.Increment(ref _currentTick);
+
 			FinishTick(message);
 		}
 

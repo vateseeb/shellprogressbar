@@ -104,7 +104,6 @@ namespace ShellProgressBar
 		private void FinishTick(string message)
 		{
 			IdleMonitor.Reset(Percentage, message ?? Message);
-			Interlocked.Increment(ref _currentTick);
 			if (message != null)
 				Interlocked.Exchange(ref _message, message);
 
